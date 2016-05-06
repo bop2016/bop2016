@@ -18,7 +18,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/json')
             self.end_headers()
-            id1, id2 = [int(kv_pair[4:]) for kv_pair in parsed_url.query.split('&')]
+            query = dict(kv_pair.split('=') for kv_pair in parsed_url.query.split('&'))
+            id1 = int(query['id1'])
+            id2 = int(query['id2'])
             result = solve(id1, id2)
             print(result)
             self.wfile.write(result.encode('utf-8'))
