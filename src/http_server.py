@@ -2,13 +2,14 @@ import http.server
 import socketserver
 from urllib.parse import urlparse
 import json
-
+from searchPath import searchPath
 PORT = 80
 
 # arguments are two ints
 # returns a str
 def solve(id1, id2):
-    return json.dumps([id1, id2])
+    paths = searchPath(id1,id2)
+    return json.dumps(paths)
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -22,7 +23,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             id1 = int(query['id1'])
             id2 = int(query['id2'])
             result = solve(id1, id2)
-            print(result)
+            print('result:',result)
             self.wfile.write(result.encode('utf-8'))
 
 httpd = socketserver.TCPServer(('', PORT), Handler)
