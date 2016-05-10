@@ -129,7 +129,7 @@ def searchPath(left, right):
         # url for 返回右边的作者写的所有论文的信息
         url_right = genURL(expr='Composite(AA.AuId=%d)' % right, attr='Id,AA.AuId,AA.AfId', count=COUNT)
 
-        # url for 找出left与right共同写的论文
+        # url for 找出left与right共同写的论文的Id
         exprTmp = 'And(Composite(AA.AuId=%d),Composite(AA.AuId=%d))' % (left, right)
         url3 = genURL(expr=exprTmp, attr='Id', count=COUNT)
 
@@ -197,7 +197,7 @@ def searchPath(left, right):
         url_right = genURL(expr='Id=%d' % right, attr=ATTR, count=COUNT)
         # url for 找出引用了right标识符的论文
         exprTmp = expr = 'RId=%d' % right
-        url3 = genURL(exprTmp, attr=ATTR, count=COUNT)
+        url3 = genURL(exprTmp, attr='Id', count=COUNT)
 
         urls = [url_left, url_right, url3]
         api = API()
@@ -244,7 +244,7 @@ def searchPath(left, right):
             # 遍历左边作者的所有论文
             for paper in left_papers:
                 if 'J' in paper.keys():
-                    paperJId = paper['J']['Id']
+                    paperJId = paper['J']['JId']
                     # 符合条件，路径加入结果集合
                     if paperJId == rightJId:
                         pathTmp = [left, paper['Id'], paperJId, right]
@@ -307,10 +307,9 @@ def searchPath(left, right):
 
         # 找出形式为 Author -> paper -> paper -> paper 的路径
 
-        # 找出引用了right标识符的论文
+        # 找出引用了right标识符的论文Id
         entities = response_url3['entities']
         Ids_Quote_Right = [paper['Id'] for paper in entities]
-        # 将列表转换为集合
         Ids_Quote_Right = set(Ids_Quote_Right)
 
         for paper in left_papers:
@@ -433,7 +432,7 @@ def searchPath(left, right):
         url_right = genURL(expr='Id=%d' % right, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
         # url for 找出引用了right标识符的论文
         exprTmp = expr = 'RId=%d' % right
-        url_citeRight = genURL(exprTmp, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
+        url_citeRight = genURL(exprTmp, attr='Id,AA.AuId,F.FId,J.JId,C.CId', count=COUNT)
 
         urls = [url_left, url_right, url_citeRight]
         api = API()
@@ -491,6 +490,9 @@ def searchPath(left, right):
                 for node in interSec:
                     paths.append([left, node, paper['Id'], right])
 
+        # 生成具有OR嵌套的expr字符串，一个字符串最多包含95个Id
+
+
     return paths
 
 
@@ -499,7 +501,7 @@ if __name__ == '__main__':
     # print(isId(2145115012))
     AuId = 2145115012
     start = time()
-    res = searchPath(1984665689, 2112090702)
+    res = searchPath(2118745042, 2139330692)
     print('paths:')
     print(res)
-    print("Elapsed time:",time()-start)
+    print("Elapsed time:", time()-start)
