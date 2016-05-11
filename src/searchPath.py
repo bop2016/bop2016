@@ -8,6 +8,8 @@ from queue import Queue
 from time import time
 from API import API
 import json
+from make_or_queries import make_or_queries
+
 
 # 判断标识符是Id还是AuId
 # 输入：API的response, expr = 'Id=%d' % Id
@@ -78,7 +80,7 @@ def genURL(expr, attr,count):
     url = 'http://oxfordhk.azure-api.net/academic/v1.0/evaluate?%s' % params
     return url
 
-# 转换为字典
+# 将响应的字节型数据转换为字典
 def convertToDict(response):
     return json.loads(response.decode('utf-8'))
 
@@ -458,7 +460,7 @@ def searchPath(left, right):
         # 引用了right的所有论文的Id
         citeRight_Ids = set([paper['Id'] for paper in citeRight_papers])
 
-        #left的引用的Id
+        # left的引用的Id的集合
         leftRIds = set(leftPaper['RId'])
 
         # 返回left和right的JId, CId, FId, AuId 的集合
@@ -490,8 +492,43 @@ def searchPath(left, right):
                 for node in interSec:
                     paths.append([left, node, paper['Id'], right])
 
-        # 生成具有OR嵌套的expr字符串，一个字符串最多包含95个Id
+        # 生成具有OR嵌套的expr字符串列表，一个字符串最多包含95个Id
+        # left的RId的列表
+        leftRIds = leftPaper['RId']
+        or_queries = make_or_queries(leftRIds)
 
+        #生成expr的参数等于or_queries的元素的URL列表
+        urls_RIds = []
+        for expr in or_queries:
+            urlTmp = genURL(expr, ATTR,COUNT)
+            urls_RIds.append(urlTmp)
+
+        if urls_RIds:
+            api = API()
+            q = Queue()
+            # 异步API
+            api.multi_get_async(urls_RIds, lambda x: q.put_nowait(x))
+            result = q.get()
+            result_dict = dict(result)
+
+            #获取left的引用的JId,CId,FId,RId,AuId,并与right的信息比较，符合条件的路径加入paths
+            for url in result_dict.keys():
+                # 提取出响应
+                response = convertToDict(result_dict[url].getvalue())
+                entities = response['entities']
+                for paper in entities:
+                    # left的引用的JId,CId,FId,RId,AuId
+                    nextTmp = nextNodes_except_RId(paper)
+                    interSec = nextTmp & rightNext
+                    if interSec:
+                        for node in interSec:
+                            paths.append([left, paper['Id'], node, right])
+
+                    # left的引用的RId与引用right的Id的交集
+                    interSec = set(paper['RId']) & citeRight_Ids
+                    if interSec:
+                        for node in interSec:
+                            paths.append([left, paper['Id'], node, right])
 
     return paths
 
@@ -501,7 +538,8 @@ if __name__ == '__main__':
     # print(isId(2145115012))
     AuId = 2145115012
     start = time()
-    res = searchPath(2118745042, 2139330692)
+    paths = searchPath(2122407999, 2144885342)
     print('paths:')
-    print(res)
+    print(paths)
+    print('num of paths:', len(paths))
     print("Elapsed time:", time()-start)
