@@ -1,15 +1,17 @@
 # coding: UTF-8
 
 
-# 函数的输入是一个列表[Id1, Id2, Id3, ....]
-# 因为expr长度有限制,最长为1800个字符，所以一个OR嵌套的字符串里的Id数量限定最多95个
-# 函数输出就是嵌套的字符串的列表,输出是列表的原因是输入的Id列表里的Id数目可能大于95个
+# 函数的输入是一个列表[Id1, Id2, Id3, ...]
+# 因为expr长度有限制,最长为1800个字符，所以一个OR嵌套的字符串里的Id数量限定最多70个
+# 函数输出就是嵌套的字符串的列表,输出是列表的原因是输入的Id列表里的Id数目可能大于70个
 def make_or_queries(ids):
-    if len(ids)>1:
-        return [make_an_or_query('Id', map(str, chunk), len(chunk)) for chunk in chunks(ids, 70)]
+    if ids:
+        if len(ids)>1:
+            return [make_an_or_query('Id', map(str, chunk), len(chunk)) for chunk in chunks(ids, 70)]
+        else:
+            return ['Id=%d' % ids[0]]
     else:
-        return ['Id=%d' % ids[0]]
-
+        return []
 
 def chunks(l, n):
     '''yield successive n-sized chunks from l'''

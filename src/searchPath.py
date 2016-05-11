@@ -9,7 +9,7 @@ from time import time
 from API import API
 import json
 from make_or_queries import make_or_queries
-
+from make_or_auid_queries import make_or_auid_queries
 
 # 判断标识符是Id还是AuId
 # 输入：API的response, expr = 'Id=%d' % Id
@@ -213,13 +213,11 @@ def searchPath(left, right):
         response_right = convertToDict(result_dict[url_right].getvalue())
         response_url3 = convertToDict(result_dict[url3].getvalue())
 
-
         # 返回左边的作者写的所有论文的信息
         left_papers = response_left['entities']  # 左边作者写的所有论文
 
         # 返回右边的论文的所有信息
         right_paper = response_right['entities'][0]
-
 
         # 找出 1-hop 路径
         for paper in left_papers:
@@ -302,13 +300,43 @@ def searchPath(left, right):
 
             # 找出形式为 Author -> Affiliation -> Author -> paper 的路径
             # 找出left属于的机构
-            leftAfIdSet = findAfId(left, response_left)
-            ##### not done --------->
-            # 通过调用API，找出rightAuIds的机构 但这样速度会变慢
+            leftAfIds = findAfId(left, response_left)
+            # 生成具有OR嵌套的AuId字符串列表
+            or_queries = make_or_auid_queries(rightAuIds)
 
+            # 生成expr的参数等于or_queries的元素的URL列表
+            urls_AuIds = []
+            for expr in or_queries:
+                urlTmp = genURL(expr, 'AA.AuId,AA.AfId', COUNT)
+                urls_AuIds.append(urlTmp)
+
+            if urls_AuIds:
+                api = API()
+                q = Queue()
+                # 异步API
+                api.multi_get_async(urls_AuIds, lambda x: q.put_nowait(x))
+                result = q.get()
+                result_dict = dict(result)
+
+                # 获取right的Authors的机构,并与left的机构比较，符合条件的路径加入paths
+                for url in result_dict.keys():
+                    # 提取出响应
+                    response = convertToDict(result_dict[url].getvalue())
+                    entities = response['entities']
+                    # 由于用以下方法找到的路径可能会出现重复，所以先存储在集合里，然后在加进paths
+                    # 满足条件的路径集合
+                    paths_fulfil = set()
+                    for paper in entities:
+                        if 'AA' in paper.keys():
+                            AA = paper['AA']
+                            for aa in AA:
+                                if 'AuId' in aa.keys() and 'AfId' in aa.keys():
+                                    if aa['AuId'] in rightAuIds and aa['AfId'] in leftAfIds:
+                                        paths_fulfil.add((left, aa['AfId'], aa['AuId'], right))
+                    for path in paths_fulfil:
+                        paths.append(list(path))
 
         # 找出形式为 Author -> paper -> paper -> paper 的路径
-
         # 找出引用了right标识符的论文Id
         entities = response_url3['entities']
         Ids_Quote_Right = [paper['Id'] for paper in entities]
@@ -329,7 +357,7 @@ def searchPath(left, right):
     if leftIsId and not rightIsId:
 
         # url for 返回left的信息
-        url_left = genURL(expr='Id=%d' % left, attr=ATTR, count=COUNT)
+        url_left = genURL(expr='Id=%d' % left, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
         # url for 返回right写的所有论文信息
         url_right = genURL(expr='Composite(AA.AuId=%d)' % right, attr=ATTR, count=COUNT)
 
@@ -349,10 +377,9 @@ def searchPath(left, right):
 
         # 返回right写的所有论文信息
         right_papers = response_right['entities']
+
         # right写的论文Id
         rightPaperIds = [paper['Id'] for paper in right_papers]
-        # right的机构
-        rightAfIds = findAfId(right,response_right)
 
         # 找出 1-hop 的路径
         # left的作者
@@ -403,9 +430,37 @@ def searchPath(left, right):
                         for fid in interSec:
                             paths.append([left, fid, paper['Id'], right])
 
-# not done    paper -> paper -> paper -> author
-        if 'RId' in leftPaper.keys():
-            pass
+        # paper -> paper -> paper -> author
+        # 生成具有OR嵌套的expr字符串列表，一个字符串最多包含70个Id
+        leftRIds = leftPaper['RId']             # left的RId的列表
+        or_queries = make_or_queries(leftRIds)
+
+        # 生成expr参数等于or_queries的元素的URL列表
+        urls_RIds = []
+        for expr in or_queries:
+            urlTmp = genURL(expr, 'RId',COUNT)
+            urls_RIds.append(urlTmp)
+
+        if urls_RIds:
+            api = API()
+            q = Queue()
+            # 异步API
+            api.multi_get_async(urls_RIds, lambda x: q.put_nowait(x))
+            result = q.get()
+            result_dict = dict(result)
+
+            # 获取left的引用的RId,并与right写的论文比较，符合条件的路径加入paths
+            for url in result_dict.keys():
+                # 提取出响应
+                response = convertToDict(result_dict[url].getvalue())
+                entities = response['entities']
+                for paper in entities:
+                    # left的引用的RId
+                    RIdsTmp = set(paper['RId'])
+                    interSec = RIdsTmp & set(rightPaperIds)
+                    if interSec:
+                        for node in interSec:
+                            paths.append([left, paper['Id'], node, right])
 
         # paper -> author -> paper -> author
         if 'AA' in leftPaper.keys():
@@ -423,10 +478,45 @@ def searchPath(left, right):
                             pathTmp = [left, AuId, paper['Id'], right]
                             paths.append(pathTmp)
 
-# not done   paper -> author -> affiliation -> author
+            # paper -> author -> affiliation -> author
             # 找出 right的机构
             rightAfIds = findAfId(right,response_right)
+             # 生成具有OR嵌套的AuId字符串列表
+            or_queries = make_or_auid_queries(leftAuIds)
 
+            # 生成expr的参数等于or_queries的元素的URL列表
+            urls_AuIds = []
+            for expr in or_queries:
+                urlTmp = genURL(expr, 'AA.AuId,AA.AfId', COUNT)
+                urls_AuIds.append(urlTmp)
+
+            if urls_AuIds:
+                api = API()
+                q = Queue()
+                # 异步API
+                api.multi_get_async(urls_AuIds, lambda x: q.put_nowait(x))
+                result = q.get()
+                result_dict = dict(result)
+
+                # 获取left的Authors的机构,并right的机构比较，符合条件的路径加入paths
+                for url in result_dict.keys():
+                    # 提取出响应
+                    response = convertToDict(result_dict[url].getvalue())
+                    entities = response['entities']
+                    # 由于用以下方法找到的路径可能会出现重复，所以先存储在集合里，然后在加进paths
+                    # 满足条件的路径集合
+                    paths_fulfil = set()
+                    for paper in entities:
+                        if 'AA' in paper.keys():
+                            AA = paper['AA']
+                            for aa in AA:
+                                if 'AuId' in aa.keys() and 'AfId' in aa.keys():
+                                    if aa['AuId'] in leftAuIds and aa['AfId'] in rightAfIds:
+                                        paths_fulfil.add((left, aa['AuId'], aa['AfId'],  right))
+                    for path in paths_fulfil:
+                        paths.append(list(path))
+
+    # left是paper,right是paper
     if leftIsId and rightIsId:
         # url for 返回left的所有信息
         url_left = genURL(expr='Id=%d' % left, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
@@ -492,7 +582,7 @@ def searchPath(left, right):
                 for node in interSec:
                     paths.append([left, node, paper['Id'], right])
 
-        # 生成具有OR嵌套的expr字符串列表，一个字符串最多包含95个Id
+        # 生成具有OR嵌套的expr字符串列表，一个字符串最多包含70个Id
         # left的RId的列表
         leftRIds = leftPaper['RId']
         or_queries = make_or_queries(leftRIds)
@@ -500,7 +590,7 @@ def searchPath(left, right):
         #生成expr的参数等于or_queries的元素的URL列表
         urls_RIds = []
         for expr in or_queries:
-            urlTmp = genURL(expr, ATTR,COUNT)
+            urlTmp = genURL(expr, 'Id,AA.AuId,F.FId,J.JId,C.CId,RId', COUNT)
             urls_RIds.append(urlTmp)
 
         if urls_RIds:
@@ -534,11 +624,9 @@ def searchPath(left, right):
 
 
 if __name__ == '__main__':
-    # print(isId(2140251882))
-    # print(isId(2145115012))
     AuId = 2145115012
     start = time()
-    paths = searchPath(2122407999, 2144885342)
+    paths = searchPath(1972106549, 1587650367)
     print('paths:')
     print(paths)
     print('num of paths:', len(paths))
