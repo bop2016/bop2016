@@ -277,7 +277,8 @@ def searchPath(left, right):
         if 'AA' in right_paper:
             # 找出右边论文的作者
             AA = right_paper['AA']
-            rightAuIds = set((Au['AuId'] for Au in AA))
+            rightAuIds = [Au['AuId'] for Au in AA]
+            rightAuIdsSet = set(rightAuIds)
 
             # 找出形式为 Author -> paper -> Author -> paper 的路径
             # 遍历left写的所有论文
@@ -286,7 +287,7 @@ def searchPath(left, right):
                     # 找出左边论文的作者Id
                     paperAuIds = [Au['AuId'] for Au in paper['AA']]
                     # 求左边论文与右边论文的作者的交集
-                    interSec = rightAuIds & set(paperAuIds)
+                    interSec = rightAuIdsSet & set(paperAuIds)
                     for AuId in interSec:
                         pathTmp = [left, paper['Id'], AuId, right]
                         paths.append(pathTmp)
@@ -441,13 +442,14 @@ def searchPath(left, right):
         if 'AA' in leftPaper:
             # 找出left的作者
             AA = leftPaper['AA']
-            leftAuIds = set((Au['AuId'] for Au in AA))
+            leftAuIds = [Au['AuId'] for Au in AA]
+            leftAuIdsSet = set(leftAuIds)
             # 遍历right写的所有论文
             for paper in right_papers:
                 if 'AA' in paper:
                     # 找出作者Id
                     paperAuIds = [Au['AuId'] for Au in paper['AA']]
-                    interSec = leftAuIds & set(paperAuIds)
+                    interSec = leftAuIdsSet & set(paperAuIds)
                     for AuId in interSec:
                         pathTmp = [left, AuId, paper['Id'], right]
                         paths.append(pathTmp)
