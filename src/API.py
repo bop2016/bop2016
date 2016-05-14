@@ -7,8 +7,7 @@ class API(object):
     def __init__(self):
         self.curl_pool = Curl_pool()
 
-    def _multi_get_async(self, urls, callback):
-        global curl_pool
+    def multi_get(self, urls):
         m = pycurl.CurlMulti()
         m.setopt(pycurl.M_PIPELINING, 0)
         # [(url, response)]
@@ -39,7 +38,10 @@ class API(object):
         for handle in handles:
             m.remove_handle(handle)
         self.curl_pool.return_objs(handles)
-        callback(requests)
+        return requests
+
+    def _multi_get_async(self, urls, callback):
+        callback(self.multi_get(urls))
 
     def multi_get_async(self, urls, callback):
         ''' waits until all urls have been got successfully, and then

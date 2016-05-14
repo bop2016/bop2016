@@ -99,9 +99,7 @@ def searchPath(left, right):
     urls = [url_left, url_right]
     global api
     q = Queue()
-    # 调用异步API
-    api.multi_get_async(urls, lambda x: q.put_nowait(x))
-    result = q.get()
+    result = api.multi_get(urls)
     result_dict = dict(result)
     # 从result中提取出响应
     response_left = convertToDict(result_dict[url_left].getvalue())
@@ -138,8 +136,7 @@ def searchPath(left, right):
 
         # 异步API
         urls = [url_left, url_right, url3]
-        api.multi_get_async(urls, lambda x: q.put_nowait(x))
-        result = q.get()
+        result = api.multi_get(urls)
         result_dict = dict(result)
 
         # 提取出响应
@@ -205,9 +202,7 @@ def searchPath(left, right):
         url3 = genURL(exprTmp, attr='Id', count=COUNT)
 
         urls = [url_left, url_right, url3]
-        # 异步API
-        api.multi_get_async(urls, lambda x: q.put_nowait(x))
-        result = q.get()
+        result = api.multi_get(urls)
         result_dict = dict(result)
         # 提取出响应
         response_left = convertToDict(result_dict[url_left].getvalue())
@@ -314,9 +309,7 @@ def searchPath(left, right):
                 urls_AuIds.append(urlTmp)
 
             if urls_AuIds:
-                # 异步API
-                api.multi_get_async(urls_AuIds, lambda x: q.put_nowait(x))
-                result = q.get()
+                result = api.multi_get(urls_AuIds)
                 result_dict = dict(result)
 
                 # 获取right的Authors的机构,并与left的机构比较，符合条件的路径加入paths
@@ -362,10 +355,8 @@ def searchPath(left, right):
         # url for 返回right写的所有论文信息
         url_right = genURL(expr='Composite(AA.AuId=%d)' % right, attr=ATTR, count=COUNT)
 
-        # 异步API
         urls = [url_left, url_right]
-        api.multi_get_async(urls, lambda x: q.put_nowait(x))
-        result = q.get()
+        result = api.multi_get(urls)
         result_dict = dict(result)
         # 提取出响应
         response_left = convertToDict(result_dict[url_left].getvalue())
@@ -441,9 +432,7 @@ def searchPath(left, right):
             urls_RIds.append(urlTmp)
 
         if urls_RIds:
-            # 异步API
-            api.multi_get_async(urls_RIds, lambda x: q.put_nowait(x))
-            result = q.get()
+            result = api.multi_get(urls_RIds)
             result_dict = dict(result)
 
             # 获取left的引用的RId,并与right写的论文比较，符合条件的路径加入paths
@@ -486,9 +475,7 @@ def searchPath(left, right):
                 urls_AuIds.append(urlTmp)
 
             if urls_AuIds:
-                # 异步API
-                api.multi_get_async(urls_AuIds, lambda x: q.put_nowait(x))
-                result = q.get()
+                result = api.multi_get(urls_AuIds)
                 result_dict = dict(result)
 
                 # 获取left的Authors的机构,并right的机构比较，符合条件的路径加入paths
@@ -520,9 +507,7 @@ def searchPath(left, right):
         url_citeRight = genURL(exprTmp, attr='Id,AA.AuId,F.FId,J.JId,C.CId', count=COUNT)
 
         urls = [url_left, url_right, url_citeRight]
-        # 异步API
-        api.multi_get_async(urls, lambda x: q.put_nowait(x))
-        result = q.get()
+        result = api.multi_get(urls)
         result_dict = dict(result)
         # 提取出响应
         response_left = convertToDict(result_dict[url_left].getvalue())
@@ -582,9 +567,7 @@ def searchPath(left, right):
             urls_RIds.append(urlTmp)
 
         if urls_RIds:
-            # 异步API
-            api.multi_get_async(urls_RIds, lambda x: q.put_nowait(x))
-            result = q.get()
+            result = api.multi_get(urls_RIds)
             result_dict = dict(result)
 
             #获取left的引用的JId,CId,FId,RId,AuId,并与right的信息比较，符合条件的路径加入paths
@@ -611,8 +594,8 @@ if __name__ == '__main__':
     AuId = 2145115012
     start = time()
     # id, id
-    # paths = searchPath(1972106549, 1587650367)
-    paths = searchPath(1972106549, 2294766364)
+    paths = searchPath(1972106549, 1587650367)
+    # paths = searchPath(1972106549, 2294766364)
     print('paths:')
     print(paths)
     print('num of paths:', len(paths))
