@@ -423,7 +423,7 @@ def searchPath(left, right):
         # 生成expr参数等于or_queries的元素的URL列表
         urls_RIds = []
         for expr in or_queries:
-            urlTmp = genURL(expr, 'RId',COUNT)
+            urlTmp = genURL(expr, 'Id,RId',COUNT)
             urls_RIds.append(urlTmp)
 
         if urls_RIds:
@@ -587,7 +587,7 @@ if __name__ == '__main__':
     AuId = 2145115012
     start = time()
     # id, id
-    paths = searchPath(1972106549, 1587650367)
+    paths = searchPath(2147152912, 307743305)
     # paths = searchPath(1972106549, 2294766364)
     print('paths:')
     print(paths)
