@@ -17,7 +17,7 @@ from make_or_auid_queries import make_or_auid_queries
 def isId(response):
     entities = response['entities']
     for entity in entities:
-        if 'Ti' in entity.keys():
+        if 'Ti' in entity:
             return True
     return False
 
@@ -36,7 +36,7 @@ def findAfId(AuId, response):
         AA = entity['AA']
         for aa in AA:
             if aa['AuId'] == AuId:
-                if 'AfId' in aa.keys():
+                if 'AfId' in aa:
                     AfIdSet.add(aa['AfId'])
                 break
     return AfIdSet
@@ -45,7 +45,7 @@ def findAfId(AuId, response):
 # 找出论文的引用
 def findRId(paper):
     RIdSet = set()
-    if 'RId' in paper.keys():
+    if 'RId' in paper:
         RIdSet = set(paper['RId'])
     return RIdSet
 
@@ -90,20 +90,24 @@ def searchPath(left, right):
     # left为左边的标识符, 类型为int64
     # right为右边的标识符, 类型为int64
 
+    global api
     # 判断两个标识符是Id还是AuId
     # 建立left的URL
-    url_left = genURL(expr='Id=%d' % left, attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
-    # 建立right的URL
-    url_right = genURL(expr='Id=%d' % right, attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId',count=COUNT)
+    # url_left = genURL(expr='Or(Id=%d,Id=%d)' % (left, right) ,attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
+    # # 建立right的URL
+    # url_right = genURL(expr='Id=%d' % right, attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId',count=COUNT)
 
-    urls = [url_left, url_right]
-    global api
-    q = Queue()
-    result = api.multi_get(urls)
-    result_dict = dict(result)
+    # urls = [url_left, url_right]
+    url= genURL(expr='Or(Id=%d,Id=%d)' % (left, right) ,attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
+    result = api.get(url).getvalue()
     # 从result中提取出响应
-    response_left = convertToDict(result_dict[url_left].getvalue())
-    response_right = convertToDict(result_dict[url_right].getvalue())
+    response = convertToDict(result)
+    entities = response['entities']
+    for entity in entities:
+        if entity['Id'] == left:
+            response_left = { 'entities' : [entity] }
+        if entity['Id'] == right:
+            response_right = { 'entities' : [entity] }
     # print(response_left,'\n', response_right)
 
     leftIsId = isId(response_left)
@@ -305,18 +309,18 @@ def searchPath(left, right):
                 result_dict = dict(result)
 
                 # 获取right的Authors的机构,并与left的机构比较，符合条件的路径加入paths
-                for url in result_dict.keys():
+                for url, response in result_dict.items():
                     # 提取出响应
-                    response = convertToDict(result_dict[url].getvalue())
+                    response = convertToDict(response.getvalue())
                     entities = response['entities']
                     # 由于用以下方法找到的路径可能会出现重复，所以先存储在集合里，然后在加进paths
                     # 满足条件的路径集合
                     paths_fulfil = set()
                     for paper in entities:
-                        if 'AA' in paper.keys():
+                        if 'AA' in paper:
                             AA = paper['AA']
                             for aa in AA:
-                                if 'AuId' in aa.keys() and 'AfId' in aa.keys():
+                                if 'AuId' in aa and 'AfId' in aa:
                                     if aa['AuId'] in rightAuIds and aa['AfId'] in leftAfIds:
                                         paths_fulfil.add((left, aa['AfId'], aa['AuId'], right))
                     for path in paths_fulfil:
@@ -370,7 +374,7 @@ def searchPath(left, right):
             paths.append([left, right])
 
         # 找出 2-hop 的路径
-        if 'RId' in leftPaper.keys():
+        if 'RId' in leftPaper:
             # 求出left的引用
             RIdSet = leftPaper['RId']
             # 求left的引用与right写的论文的交集
@@ -383,28 +387,28 @@ def searchPath(left, right):
 
         # 找出 3-hop 的路径
         # paper -> Journal -> paper -> author
-        if 'J' in leftPaper.keys():
+        if 'J' in leftPaper:
             leftJId =leftPaper['J']['JId']
             for paper in right_papers:
-                if 'J' in paper.keys():
+                if 'J' in paper:
                     JId = paper['J']['JId']
                     if leftJId == JId:
                         paths.append([left, JId, paper['Id'], right])
 
         # paper -> conference -> paper -> author
-        if 'C' in leftPaper.keys():
+        if 'C' in leftPaper:
             leftCId = leftPaper['C']['CId']
             for paper in right_papers:
-                if 'C' in paper.keys():
+                if 'C' in paper:
                     CId = paper['C']['CId']
                     if leftCId == CId:
                         paths.append([left, CId, paper['Id'], right])
 
         # paper -> field -> paper -> author
-        if 'F' in leftPaper.keys():
+        if 'F' in leftPaper:
             leftFIds = [field['FId'] for field in leftPaper['F']]
             for paper in right_papers:
-                if 'F' in paper.keys():
+                if 'F' in paper:
                     paperFIds = [field['FId'] for field in paper['F']]
                     interSec = set(leftFIds) & set(paperFIds)
                     if interSec:

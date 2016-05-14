@@ -4,7 +4,10 @@ import pycurl
 class Curl_pool(object):
     ''' a pool to relief the cost of allocating Curl object '''
     def __init__(self):
+        Init_Count = 1000
         self._Curl_objects = Queue()
+        for i in range(Init_Count):
+            self._Curl_objects.put_nowait(pycurl.Curl())
 
     def get_obj(self):
         try:
