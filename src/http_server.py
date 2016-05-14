@@ -13,7 +13,6 @@ def solve(id1, id2):
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        print('Got a request:', self.path)
         parsed_url = urlparse(self.path)
         if parsed_url.path == '/semifinal':
             self.send_response(200)
@@ -23,7 +22,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             id1 = int(query['id1'])
             id2 = int(query['id2'])
             result = solve(id1, id2)
-            print('result:',result)
             self.wfile.write(result.encode('utf-8'))
 
 httpd = socketserver.TCPServer(('', PORT), Handler)
