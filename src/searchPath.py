@@ -92,9 +92,9 @@ def searchPath(left, right):
 
     # 判断两个标识符是Id还是AuId
     # 建立left的URL
-    url_left = genURL(expr='Id=%s' % left, attr='Id,Ti', count=1)
+    url_left = genURL(expr='Id=%d' % left, attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
     # 建立right的URL
-    url_right = genURL(expr='Id=%s' % right, attr='Id,Ti', count=1)
+    url_right = genURL(expr='Id=%d' % right, attr='Id,Ti,AA.AuId,F.FId,J.JId,C.CId',count=COUNT)
 
     urls = [url_left, url_right]
     global api
@@ -106,15 +106,8 @@ def searchPath(left, right):
     response_right = convertToDict(result_dict[url_right].getvalue())
     # print(response_left,'\n', response_right)
 
-    if isId(response_left):
-        leftIsId = True   # 左边的标识符是Id
-    else:
-        leftIsId = False  # 左边的标识符是AuId
-
-    if isId(response_right):
-        rightIsId = True   # 右边的标识符是Id
-    else:
-        rightIsId = False  # 右边的标识符是AuId
+    leftIsId = isId(response_left)
+    rightIsId = isId(response_right)
 
     # print('leftIsId:',leftIsId)
     # print('rightIsId:',rightIsId)
@@ -196,17 +189,16 @@ def searchPath(left, right):
         # url for 返回left写的所有论文的信息
         url_left = genURL(expr='Composite(AA.AuId=%d)' % left, attr=ATTR,count=COUNT)
         # url for 返回right的所有信息
-        url_right = genURL(expr='Id=%d' % right, attr=ATTR, count=COUNT)
+        # url_right = genURL(expr='Id=%d' % right, attr=ATTR, count=COUNT)
         # url for 找出引用了right标识符的论文
         exprTmp = expr = 'RId=%d' % right
         url3 = genURL(exprTmp, attr='Id', count=COUNT)
 
-        urls = [url_left, url_right, url3]
+        urls = [url_left, url3]
         result = api.multi_get(urls)
         result_dict = dict(result)
         # 提取出响应
         response_left = convertToDict(result_dict[url_left].getvalue())
-        response_right = convertToDict(result_dict[url_right].getvalue())
         response_url3 = convertToDict(result_dict[url3].getvalue())
 
         # 返回左边的作者写的所有论文的信息
@@ -351,15 +343,14 @@ def searchPath(left, right):
     if leftIsId and not rightIsId:
 
         # url for 返回left的信息
-        url_left = genURL(expr='Id=%d' % left, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
+        # url_left = genURL(expr='Id=%d' % left, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
         # url for 返回right写的所有论文信息
         url_right = genURL(expr='Composite(AA.AuId=%d)' % right, attr=ATTR, count=COUNT)
 
-        urls = [url_left, url_right]
+        urls = [url_right]
         result = api.multi_get(urls)
         result_dict = dict(result)
         # 提取出响应
-        response_left = convertToDict(result_dict[url_left].getvalue())
         response_right = convertToDict(result_dict[url_right].getvalue())
 
         # 返回left的所有信息
@@ -499,19 +490,17 @@ def searchPath(left, right):
     # left是paper,right是paper
     if leftIsId and rightIsId:
         # url for 返回left的所有信息
-        url_left = genURL(expr='Id=%d' % left, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
+        # url_left = genURL(expr='Id=%d' % left, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId',count=COUNT)
         # url for 返回right的所有信息
-        url_right = genURL(expr='Id=%d' % right, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
+        # url_right = genURL(expr='Id=%d' % right, attr='Id,AA.AuId,F.FId,J.JId,C.CId,RId', count=COUNT)
         # url for 找出引用了right标识符的论文
         exprTmp = expr = 'RId=%d' % right
         url_citeRight = genURL(exprTmp, attr='Id,AA.AuId,F.FId,J.JId,C.CId', count=COUNT)
 
-        urls = [url_left, url_right, url_citeRight]
+        urls = [url_citeRight]
         result = api.multi_get(urls)
         result_dict = dict(result)
         # 提取出响应
-        response_left = convertToDict(result_dict[url_left].getvalue())
-        response_right = convertToDict(result_dict[url_right].getvalue())
         response_citeRight = convertToDict(result_dict[url_citeRight].getvalue())
 
         # 返回left的所有信息
