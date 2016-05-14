@@ -260,14 +260,14 @@ def searchPath(left, right):
         # 找出形式为 Author -> paper -> field -> paper 的路径
         if 'F' in right_paper:
             # 找出右边论文的field
-            rightFIds = [field['FId'] for field in right_paper['F']]
+            rightFIds = set((field['FId'] for field in right_paper['F']))
             # 遍历left写的所有论文
             for paper in left_papers:
                 if 'F' in paper:
                     # 找出左边论文的field
                     paperFIds = [field['FId'] for field in paper['F']]
                     # 求左边论文与右边论文的field的交集
-                    interSec = set(rightFIds) & set(paperFIds)
+                    interSec = rightFIds & set(paperFIds)
                     # 路径加入paths集合
                     if interSec:
                         for fid in interSec:
@@ -277,7 +277,7 @@ def searchPath(left, right):
         if 'AA' in right_paper:
             # 找出右边论文的作者
             AA = right_paper['AA']
-            rightAuIds = [Au['AuId'] for Au in AA]
+            rightAuIds = set((Au['AuId'] for Au in AA))
 
             # 找出形式为 Author -> paper -> Author -> paper 的路径
             # 遍历left写的所有论文
@@ -286,11 +286,10 @@ def searchPath(left, right):
                     # 找出左边论文的作者Id
                     paperAuIds = [Au['AuId'] for Au in paper['AA']]
                     # 求左边论文与右边论文的作者的交集
-                    interSec = set(rightAuIds) & set(paperAuIds)
-                    if interSec:
-                        for AuId in interSec:
-                            pathTmp = [left, paper['Id'], AuId, right]
-                            paths.append(pathTmp)
+                    interSec = rightAuIds & set(paperAuIds)
+                    for AuId in interSec:
+                        pathTmp = [left, paper['Id'], AuId, right]
+                        paths.append(pathTmp)
 
             # 找出形式为 Author -> Affiliation -> Author -> paper 的路径
             # 找出left属于的机构
@@ -306,10 +305,9 @@ def searchPath(left, right):
 
             if urls_AuIds:
                 result = api.multi_get(urls_AuIds)
-                result_dict = dict(result)
 
                 # 获取right的Authors的机构,并与left的机构比较，符合条件的路径加入paths
-                for url, response in result_dict.items():
+                for url, response in result:
                     # 提取出响应
                     response = convertToDict(response.getvalue())
                     entities = response['entities']
@@ -338,10 +336,9 @@ def searchPath(left, right):
             # 找集合的交集
             interSec = RIdSet & Ids_Quote_Right
             # 符合条件的路径加进paths中
-            if interSec:
-                for Id in interSec:
-                    pathTmp = [left, paper['Id'], Id, right]
-                    paths.append(pathTmp)
+            for Id in interSec:
+                pathTmp = [left, paper['Id'], Id, right]
+                paths.append(pathTmp)
 
     # left是paper,right是Author
     if leftIsId and not rightIsId:
@@ -364,7 +361,7 @@ def searchPath(left, right):
         right_papers = response_right['entities']
 
         # right写的论文Id
-        rightPaperIds = [paper['Id'] for paper in right_papers]
+        rightPaperIds = set((paper['Id'] for paper in right_papers))
 
         # 找出 1-hop 的路径
         # left的作者
@@ -378,7 +375,7 @@ def searchPath(left, right):
             # 求出left的引用
             RIdSet = leftPaper['RId']
             # 求left的引用与right写的论文的交集
-            interSec = set(RIdSet) & set(rightPaperIds)
+            interSec = set(RIdSet) & rightPaperIds
             # 符合条件的路径加入paths
             if interSec:
                 for Id in interSec:
@@ -406,14 +403,13 @@ def searchPath(left, right):
 
         # paper -> field -> paper -> author
         if 'F' in leftPaper:
-            leftFIds = [field['FId'] for field in leftPaper['F']]
+            leftFIds = set((field['FId'] for field in leftPaper['F']))
             for paper in right_papers:
                 if 'F' in paper:
                     paperFIds = [field['FId'] for field in paper['F']]
-                    interSec = set(leftFIds) & set(paperFIds)
-                    if interSec:
-                        for fid in interSec:
-                            paths.append([left, fid, paper['Id'], right])
+                    interSec = leftFIds & set(paperFIds)
+                    for fid in interSec:
+                        paths.append([left, fid, paper['Id'], right])
 
         # paper -> paper -> paper -> author
         # 生成具有OR嵌套的expr字符串列表，一个字符串最多包含70个Id
@@ -428,17 +424,16 @@ def searchPath(left, right):
 
         if urls_RIds:
             result = api.multi_get(urls_RIds)
-            result_dict = dict(result)
 
             # 获取left的引用的RId,并与right写的论文比较，符合条件的路径加入paths
-            for url, response in result_dict.items():
+            for url, response in result:
                 # 提取出响应
                 response = convertToDict(response.getvalue())
                 entities = response['entities']
                 for paper in entities:
                     # left的引用的RId
                     RIdsTmp = set(paper['RId'])
-                    interSec = RIdsTmp & set(rightPaperIds)
+                    interSec = RIdsTmp & rightPaperIds
                     for node in interSec:
                         paths.append([left, paper['Id'], node, right])
 
@@ -446,13 +441,13 @@ def searchPath(left, right):
         if 'AA' in leftPaper:
             # 找出left的作者
             AA = leftPaper['AA']
-            leftAuIds = [Au['AuId'] for Au in AA]
+            leftAuIds = set((Au['AuId'] for Au in AA))
             # 遍历right写的所有论文
             for paper in right_papers:
                 if 'AA' in paper:
                     # 找出作者Id
                     paperAuIds = [Au['AuId'] for Au in paper['AA']]
-                    interSec = set(leftAuIds) & set(paperAuIds)
+                    interSec = leftAuIds & set(paperAuIds)
                     for AuId in interSec:
                         pathTmp = [left, AuId, paper['Id'], right]
                         paths.append(pathTmp)
@@ -471,10 +466,9 @@ def searchPath(left, right):
 
             if urls_AuIds:
                 result = api.multi_get(urls_AuIds)
-                result_dict = dict(result)
 
                 # 获取left的Authors的机构,并right的机构比较，符合条件的路径加入paths
-                for url, response in result_dict.items():
+                for url, response in result:
                     # 提取出响应
                     response = convertToDict(response.getvalue())
                     entities = response['entities']
@@ -517,7 +511,7 @@ def searchPath(left, right):
         citeRight_papers = response_citeRight['entities']
 
         # 引用了right的所有论文的Id
-        citeRight_Ids = set([paper['Id'] for paper in citeRight_papers])
+        citeRight_Ids = set((paper['Id'] for paper in citeRight_papers))
 
         # left的引用的Id的集合
         leftRIds = set(leftPaper['RId'])
@@ -561,10 +555,9 @@ def searchPath(left, right):
 
         if urls_RIds:
             result = api.multi_get(urls_RIds)
-            result_dict = dict(result)
 
             #获取left的引用的JId,CId,FId,RId,AuId,并与right的信息比较，符合条件的路径加入paths
-            for url, response in result_dict.items():
+            for url, response in result:
                 # 提取出响应
                 response = convertToDict(response.getvalue())
                 entities = response['entities']
