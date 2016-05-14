@@ -16,7 +16,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         parsed_url = urlparse(self.path)
         if parsed_url.path == '/semifinal':
             self.send_response(200)
-            self.send_header('Content-type', 'text/json')
+            self.send_header('Content-type', 'application/json')
             self.end_headers()
             query = dict(kv_pair.split('=') for kv_pair in parsed_url.query.split('&'))
             id1 = int(query['id1'])
