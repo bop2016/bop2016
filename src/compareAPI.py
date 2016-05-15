@@ -1,13 +1,17 @@
 import http.client, urllib.request, urllib.parse, urllib.error, base64
 from time import time
+import json
 
-def normalAPI(id):
+#官方的API
+def callAPI(expr, attr='Id,Ti,AA.AuId',count=1000000):
+    # expr为查询表达式
+    # count为返回结果的数目
     params = urllib.parse.urlencode({
         # Request parameters
-        'expr': 'Id=%s'%id,
+        'expr': '%s' % expr,
         'model': 'latest',
-        'attributes': 'Id,Ti,AA.AuId,AA.AfId,F.FId,J.JN,J.JId,C.CId,RId',
-        'count': '1000000',
+        'attributes': '%s' % attr,
+        'count': '%d' % count,
         'offset': '0',
         'subscription-key': 'f7cc29509a8443c5b3a5e56b0e38b5a6',
     })
@@ -17,15 +21,17 @@ def normalAPI(id):
         conn.request("GET", "/academic/v1.0/evaluate?%s" % params)
         response = conn.getresponse()
         data = response.read()
+        data = json.loads(data.decode('UTF-8'))
         conn.close()
+        return data
     except Exception as e:
-        print("[Errno {0}] {1}".format(e.errno, e.strerror))
-    return data
+        print(e)
 
 t1 = time()
-data = normalAPI(2112090702)
+data = callAPI('Id=2112090702',attr='Id,Ti,AA.AuId,AA.AfId,F.FId,J.JN,J.JId,C.CId,RId',count = 1000000)
+t2 = time()
 print(data)
-print('Elapsed time of normalAPI:',time()-t1)
+print('Elapsed time of official API:',t2-t1)
 
 #国伟的API
 from API import API
