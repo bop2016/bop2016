@@ -349,11 +349,9 @@ def searchPath(left, right):
         # url for 返回right写的所有论文信息
         url_right = genURL(expr='Composite(AA.AuId=%d)' % right, attr=ATTR, count=COUNT)
 
-        urls = [url_right]
-        result = api.multi_get(urls)
-        result_dict = dict(result)
+        result = api.get(url_right)
         # 提取出响应
-        response_right = convertToDict(result_dict[url_right].getvalue())
+        response_right = convertToDict(result.getvalue())
 
         # 返回left的所有信息
         leftPaper = response_left['entities'][0]
@@ -497,11 +495,9 @@ def searchPath(left, right):
         exprTmp = expr = 'RId=%d' % right
         url_citeRight = genURL(exprTmp, attr='Id,AA.AuId,F.FId,J.JId,C.CId', count=COUNT)
 
-        urls = [url_citeRight]
-        result = api.multi_get(urls)
-        result_dict = dict(result)
+        result = api.get(url_citeRight)
         # 提取出响应
-        response_citeRight = convertToDict(result_dict[url_citeRight].getvalue())
+        response_citeRight = convertToDict(result.getvalue())
 
         # 返回left的所有信息
         leftPaper = response_left['entities'][0]
