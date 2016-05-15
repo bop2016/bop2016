@@ -59,11 +59,11 @@ def nextNodes_except_RId(paper):
         CId = paper['C']['CId']
         nodes.add(CId)
     if 'F' in paper:
-        FIds = [f['FId'] for f in paper['F']]
+        FIds = (f['FId'] for f in paper['F'])
         nodes.update(set(FIds))
     if 'AA' in paper:
         AA = paper['AA']
-        AuIds = [aa['AuId'] for aa in AA]
+        AuIds = (aa['AuId'] for aa in AA)
         nodes.update(set(AuIds))
     return nodes
 
@@ -129,7 +129,7 @@ def searchPath(left, right):
 
         # 异步API
         urls = [url_left, url_right]
-        result = api.multi_get(urls)
+        result = api.multi_get_grequests(urls)
         result_dict = dict(result)
 
         # 提取出响应
@@ -203,7 +203,7 @@ def searchPath(left, right):
         url3 = genURL(exprTmp, attr='Id', count=COUNT)
 
         urls = [url_left, url3]
-        result = api.multi_get(urls)
+        result = api.multi_get_grequests(urls)
         result_dict = dict(result)
         # 提取出响应
         response_left = convertToDict(result_dict[url_left].getvalue())
@@ -309,7 +309,7 @@ def searchPath(left, right):
                 urls_AuIds.append(urlTmp)
 
             if urls_AuIds:
-                result = api.multi_get(urls_AuIds)
+                result = api.multi_get_grequests(urls_AuIds)
 
                 # 获取right的Authors的机构,并与left的机构比较，符合条件的路径加入paths
                 for url, response in result:
@@ -426,7 +426,7 @@ def searchPath(left, right):
             urls_RIds.append(urlTmp)
 
         if urls_RIds:
-            result = api.multi_get(urls_RIds)
+            result = api.multi_get_grequests(urls_RIds)
 
             # 获取left的引用的RId,并与right写的论文比较，符合条件的路径加入paths
             for url, response in result:
@@ -469,7 +469,7 @@ def searchPath(left, right):
                 urls_AuIds.append(urlTmp)
 
             if urls_AuIds:
-                result = api.multi_get(urls_AuIds)
+                result = api.multi_get_grequests(urls_AuIds)
 
                 # 获取left的Authors的机构,并right的机构比较，符合条件的路径加入paths
                 for url, response in result:
@@ -556,7 +556,7 @@ def searchPath(left, right):
             urls_RIds.append(urlTmp)
 
         if urls_RIds:
-            result = api.multi_get(urls_RIds)
+            result = api.multi_get_grequests(urls_RIds)
 
             #获取left的引用的JId,CId,FId,RId,AuId,并与right的信息比较，符合条件的路径加入paths
             for url, response in result:

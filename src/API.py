@@ -2,6 +2,7 @@ from Curl_pool import Curl_pool
 from threading import Thread
 import pycurl
 from io import BytesIO
+import grequests
 
 class API(object):
     def __init__(self):
@@ -39,6 +40,23 @@ class API(object):
             m.remove_handle(handle)
         self.curl_pool.return_objs(handles)
         return requests
+
+    def multi_get_grequests(self, urls):
+        succeeded = []
+        retry_count = 0
+        while len(urls) and retry_count < 3:
+            failed_urls = []
+            for url, response in zip(urls, grequests.map((grequests.get(u) for u in urls), gtimeout=5)):
+                if response is None:
+                    failed_urls.append(url)
+                else:
+                    succeeded.append((url, BytesIO(response.text.encode('utf-8'))))
+            if len(failed_urls) != len(urls):
+                urls = failed_urls
+                retry_count = 0
+            else:
+                retry_count += 1
+        return succeeded
 
     def _multi_get_async(self, urls, callback):
         callback(self.multi_get(urls))

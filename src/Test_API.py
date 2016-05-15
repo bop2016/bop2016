@@ -26,7 +26,7 @@ if __name__ == '__main__':
         print(result[0][1].getvalue()[:10])
         print('Elapsed time of multi_get: %f' % (time() - start_time))
         start_time = time()
-        grequests.map((grequests.get(u) for u in urls), gtimeout=1)
+        api.multi_get_grequests(urls)
         print('Elapsed time of grequests: %f' % (time() - start_time))
 
     print(api.get('http://oxfordhk.azure-api.net/academic/v1.0/evaluate?%s' % params).getvalue()[:10])

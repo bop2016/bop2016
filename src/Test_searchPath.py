@@ -1,4 +1,5 @@
 from searchPath import searchPath
+from time import time
 
 Cases = [
     ((1972106549, 1587650367), 32),
@@ -17,4 +18,6 @@ Cases = [
 
 for id_pair, expected_result in Cases:
     print(id_pair)
+    start = time()
     print(len(searchPath(*id_pair)), expected_result)
+    print(time() - start)
