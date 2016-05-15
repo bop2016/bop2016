@@ -127,19 +127,33 @@ def searchPath(left, right):
         # url for 返回右边的作者写的所有论文的信息
         url_right = genURL(expr='Composite(AA.AuId=%d)' % right, attr='Id,AA.AuId,AA.AfId', count=COUNT)
 
-        # url for 找出left与right共同写的论文的Id
-        exprTmp = 'And(Composite(AA.AuId=%d),Composite(AA.AuId=%d))' % (left, right)
-        url3 = genURL(expr=exprTmp, attr='Id', count=COUNT)
-
         # 异步API
-        urls = [url_left, url_right, url3]
+        urls = [url_left, url_right]
         result = api.multi_get(urls)
         result_dict = dict(result)
 
         # 提取出响应
         response_left = convertToDict(result_dict[url_left].getvalue())
         response_right = convertToDict(result_dict[url_right].getvalue())
-        response_url3 = convertToDict(result_dict[url3].getvalue())
+
+        entities_left = response_left['entities']
+        entities_right = response_right['entities']
+
+        # 求出左边作者写的所有论文Id的集合
+        leftPaperSet = set()
+        for entity in entities_left:
+            try:
+                leftPaperSet.add(entity['Id'])
+            except Exception:
+                pass
+
+        # 求出右边作者写的所有论文Id的集合
+        rightPaperSet = set()
+        for entity in entities_right:
+            try:
+                rightPaperSet.add(entity['Id'])
+            except Exception:
+                pass
 
         # 找出左边作者的机构
         leftAfIdSet = findAfId(left, response_left)
@@ -151,10 +165,10 @@ def searchPath(left, right):
 
         #  找出 2-hop 路径
         # 找出left与right共同写的论文
-        entities = response_url3['entities']
-        for paper in entities:
+        interSec = leftPaperSet & rightPaperSet
+        for Id in interSec:
             # 将中间点是论文的路径加入结果集合中
-            pathTmp = [left, paper['Id'], right]
+            pathTmp = [left, Id, right]
             paths.append(pathTmp)
 
         # 找出left与right共同的机构
@@ -167,18 +181,8 @@ def searchPath(left, right):
 
         #  找出 3-hop 路径
 
-        # 求出右边作者写的所有论文Id的集合
-        rightPaperSet = set()
-        entities = response_right['entities']
-        for entity in entities:
-            try:
-                rightPaperSet.add(entity['Id'])
-            except Exception:
-                pass
-
         # 检查左边作者的论文的引用是否在rightPaperSet中，如果在，则将路径加入结果集合
-        entities = response_left['entities']
-        for entity in entities:
+        for entity in entities_left:
             try:
                 for rid in entity['RId']:
                     if rid in rightPaperSet:
@@ -578,8 +582,10 @@ if __name__ == '__main__':
     AuId = 2145115012
     start = time()
     # id, id
-    paths = searchPath(2147152912, 307743305)
+    # paths = searchPath(2147152912, 307743305)
     # paths = searchPath(1972106549, 2294766364)
+    # au , au
+    paths = searchPath(2120836466, 2109031554)
     print('paths:')
     print(paths)
     print('num of paths:', len(paths))
